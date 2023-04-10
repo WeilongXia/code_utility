@@ -110,3 +110,40 @@
 
 通过使用 std::cout << q.coeffs() << std::endl 可以知道，其内部存储是：xyzw
 
+### Hamilton形式的四元数，表示全局坐标系下的姿态，如果给定角速度和dt，如何进行更新
+
+        #include <Eigen/Core>
+        #include <Eigen/Geometry>
+        #include <iostream>
+
+        int main()
+        {
+        // 给定的角速度（弧度/秒）
+        Eigen::Vector3d angular_velocity(0.1, 0.2, 0.3);
+
+        // 给定的时间间隔（秒）
+        double dt = 0.01;
+
+        // 初始四元数（表示全局坐标系下的姿态）
+        Eigen::Quaterniond q0(1.0, 0.0, 0.0, 0.0);
+
+        // 将角速度转换为四元数
+        Eigen::Quaterniond omega(0, angular_velocity.x() * 0.5, angular_velocity.y() * 0.5, angular_velocity.z() 
+        * 0.5);
+
+        // 四元数和旋转向量的对应关系
+        // q = [cos(theta/2), u*sin(theta/2)]，其中u代表旋转轴，theta代表旋转角度
+        double omega_norm = omega.vec().norm();
+        Eigen::Quaterniond exp_omega;
+        exp_omega.w() = std::cos(omega_norm * dt);
+        exp_omega.vec() = std::sin(omega_norm * dt) * omega.vec() / omega_norm;
+
+        // 将更新应用于当前姿态四元数
+        Eigen::Quaterniond q1 = q0 * exp_omega;
+        q1.normalize();
+
+        // 输出更新后的四元数
+        std::cout << "Updated quaternion: " << q1.coeffs().transpose() << std::endl;
+
+        return 0;
+        }
